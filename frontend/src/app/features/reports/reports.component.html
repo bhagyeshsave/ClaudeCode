@@ -1,0 +1,53 @@
+<div class="page-container">
+  <h1>Reports</h1>
+
+  <div class="report-card">
+    <form [formGroup]="form" class="report-form">
+      <mat-form-field appearance="outline">
+        <mat-label>Format</mat-label>
+        <mat-select formControlName="format">
+          <mat-option value="csv">CSV</mat-option>
+          <mat-option value="xlsx">XLSX</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Category (optional)</mat-label>
+        <mat-select formControlName="categoryId">
+          <mat-option [value]="null">All categories</mat-option>
+          @for (category of categories(); track category.id) {
+            <mat-option [value]="category.id">{{ category.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" type="button" (click)="generate()" [disabled]="generating()">
+        <mat-icon>insert_chart</mat-icon>
+        Generate
+      </button>
+    </form>
+
+    @if (job()) {
+      <div class="job-status">
+        <h2>Job Status: {{ job()!.status | titlecase }}</h2>
+
+        @if (job()!.status === 'pending' || job()!.status === 'processing') {
+          <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+          <p class="progress-label">Generating report, please wait...</p>
+        }
+
+        @if (job()!.status === 'completed') {
+          <p class="success-text">Report ready: {{ job()!.fileName }}</p>
+          <button mat-raised-button color="accent" (click)="download()" [disabled]="downloading()">
+            <mat-icon>download</mat-icon>
+            Download
+          </button>
+        }
+
+        @if (job()!.status === 'failed') {
+          <p class="failed-text">Report generation failed. Please try again.</p>
+        }
+      </div>
+    }
+  </div>
+</div>

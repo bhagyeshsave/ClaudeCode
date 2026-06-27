@@ -1,0 +1,62 @@
+<div class="page-container">
+  <h1>Bulk Upload Products</h1>
+
+  <div class="upload-card">
+    <p>
+      Upload a CSV file with columns <code>name, price, categoryName, image</code> to create products in bulk.
+    </p>
+
+    <button mat-stroked-button color="primary" (click)="downloadTemplate()">
+      <mat-icon>download</mat-icon>
+      Download CSV Template
+    </button>
+
+    <div class="file-row">
+      <input type="file" accept=".csv" (change)="onFileSelected($event)" />
+      <button mat-raised-button color="primary" (click)="upload()" [disabled]="uploading()">
+        <mat-icon>upload</mat-icon>
+        Upload
+      </button>
+    </div>
+
+    @if (job()) {
+      <div class="job-status">
+        <h2>Job Status: {{ job()!.status | titlecase }}</h2>
+
+        @if (job()!.status === 'pending' || job()!.status === 'processing') {
+          <mat-progress-bar mode="determinate" [value]="progressPercentage()"></mat-progress-bar>
+          <p class="progress-label">{{ job()!.processedRows }} / {{ job()!.totalRows }} rows processed</p>
+        }
+
+        @if (job()!.status === 'completed') {
+          <div class="summary">
+            <p>Total rows: {{ job()!.totalRows }}</p>
+            <p class="success-text">Success: {{ job()!.successCount }}</p>
+            <p class="failed-text">Failed: {{ job()!.failedCount }}</p>
+          </div>
+        }
+
+        @if (job()!.status === 'failed') {
+          <p class="failed-text">The job failed to process. Please check the file and try again.</p>
+        }
+
+        @if (job()!.errors.length) {
+          <table mat-table [dataSource]="job()!.errors" class="mat-elevation-z1 errors-table">
+            <ng-container matColumnDef="row">
+              <th mat-header-cell *matHeaderCellDef>Row</th>
+              <td mat-cell *matCellDef="let error">{{ error.row }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="message">
+              <th mat-header-cell *matHeaderCellDef>Error</th>
+              <td mat-cell *matCellDef="let error">{{ error.message }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="errorColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: errorColumns"></tr>
+          </table>
+        }
+      </div>
+    }
+  </div>
+</div>

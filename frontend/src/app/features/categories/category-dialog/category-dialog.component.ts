@@ -1,4 +1,4 @@
-import { Component, Inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -44,25 +44,18 @@ export interface CategoryDialogData {
   ]
 })
 export class CategoryDialogComponent {
+  private fb = inject(FormBuilder);
+  private categoryService = inject(CategoryService);
+  dialogRef = inject(MatDialogRef<CategoryDialogComponent, Category | null>);
+  data = inject<CategoryDialogData>(MAT_DIALOG_DATA);
+
   saving = signal(false);
   errorMessage = signal<string | null>(null);
-  isEdit: boolean;
+  isEdit = !!this.data.category;
 
   form = this.fb.group({
-    name: ['', [Validators.required, Validators.minLength(1)]]
+    name: [this.data.category?.name ?? '', [Validators.required, Validators.minLength(1)]]
   });
-
-  constructor(
-    private fb: FormBuilder,
-    private categoryService: CategoryService,
-    public dialogRef: MatDialogRef<CategoryDialogComponent, Category | null>,
-    @Inject(MAT_DIALOG_DATA) public data: CategoryDialogData
-  ) {
-    this.isEdit = !!data.category;
-    if (data.category) {
-      this.form.patchValue({ name: data.category.name });
-    }
-  }
 
   submit(): void {
     if (this.form.invalid) {
