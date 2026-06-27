@@ -124,7 +124,14 @@ async function processBulkUploadJob(jobId) {
             job.processedRows = processedRows;
             job.successCount = successCount;
             job.failedCount = failedCount;
-            job.errors = errors;
+            // Assign a fresh array reference (not the same `errors` object
+            // we keep mutating in place) so Sequelize's dirty-checking -
+            // which compares by reference/deep-equality against the value
+            // it already stored last time - actually sees this as changed
+            // and includes it in the UPDATE. Reusing the same mutated
+            // reference across saves makes Sequelize believe the JSONB
+            // column never changed, silently dropping all row errors.
+            job.errors = [...errors];
             await job.save();
           }
 
@@ -151,7 +158,7 @@ async function processBulkUploadJob(jobId) {
     job.processedRows = processedRows;
     job.successCount = successCount;
     job.failedCount = failedCount;
-    job.errors = errors;
+    job.errors = [...errors];
     job.completedAt = new Date();
     await job.save();
   } catch (err) {
