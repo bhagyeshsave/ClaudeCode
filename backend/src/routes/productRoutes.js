@@ -4,6 +4,7 @@ const productController = require('../controllers/productController');
 const bulkUploadController = require('../controllers/bulkUploadController');
 const authenticate = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const validateIdParam = require('../middleware/validateIdParam');
 const { uploadProductImage, uploadBulkCsv } = require('../middleware/upload');
 
 const router = express.Router();
@@ -14,7 +15,11 @@ router.use(authenticate);
 // so that path segments like "bulk-upload" are never captured as an :id.
 router.get('/bulk-upload/template', bulkUploadController.downloadTemplate);
 router.post('/bulk-upload', uploadBulkCsv.single('file'), bulkUploadController.startBulkUpload);
-router.get('/bulk-upload/:jobId', bulkUploadController.getBulkUploadStatus);
+router.get(
+  '/bulk-upload/:jobId',
+  validateIdParam('jobId'),
+  bulkUploadController.getBulkUploadStatus
+);
 
 const productValidators = [
   body('name').trim().notEmpty().withMessage('Product name is required'),
@@ -39,7 +44,7 @@ const productUpdateValidators = [
 ];
 
 router.get('/', productController.listProducts);
-router.get('/:id', productController.getProduct);
+router.get('/:id', validateIdParam('id'), productController.getProduct);
 router.post(
   '/',
   uploadProductImage.single('image'),
@@ -49,11 +54,12 @@ router.post(
 );
 router.put(
   '/:id',
+  validateIdParam('id'),
   uploadProductImage.single('image'),
   productUpdateValidators,
   validate,
   productController.updateProduct
 );
-router.delete('/:id', productController.deleteProduct);
+router.delete('/:id', validateIdParam('id'), productController.deleteProduct);
 
 module.exports = router;

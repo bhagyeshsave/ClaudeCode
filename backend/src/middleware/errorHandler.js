@@ -1,4 +1,9 @@
-const { ValidationError, UniqueConstraintError, ForeignKeyConstraintError } = require('sequelize');
+const {
+  ValidationError,
+  UniqueConstraintError,
+  ForeignKeyConstraintError,
+  DatabaseError,
+} = require('sequelize');
 
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
@@ -45,6 +50,16 @@ function errorHandler(err, req, res, next) {
       success: false,
       message: err.message,
       errors: err.errors || [],
+    });
+  }
+
+  // Malformed query input (e.g. a non-numeric value passed where an integer
+  // id/jobId was expected) should surface as a 400, not a raw 500.
+  if (err instanceof DatabaseError) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid request parameters',
+      errors: [err.message],
     });
   }
 

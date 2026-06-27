@@ -3,15 +3,17 @@ const { body } = require('express-validator');
 const userController = require('../controllers/userController');
 const authenticate = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const validateIdParam = require('../middleware/validateIdParam');
 
 const router = express.Router();
 
 router.use(authenticate);
 
 router.get('/', userController.listUsers);
-router.get('/:id', userController.getUser);
+router.get('/:id', validateIdParam('id'), userController.getUser);
 router.put(
   '/:id',
+  validateIdParam('id'),
   [
     body('email').optional().isEmail().withMessage('A valid email is required').normalizeEmail(),
     body('password')
@@ -22,6 +24,6 @@ router.put(
   validate,
   userController.updateUser
 );
-router.delete('/:id', userController.deleteUser);
+router.delete('/:id', validateIdParam('id'), userController.deleteUser);
 
 module.exports = router;

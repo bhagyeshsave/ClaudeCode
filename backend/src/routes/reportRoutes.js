@@ -3,6 +3,7 @@ const { body } = require('express-validator');
 const reportController = require('../controllers/reportController');
 const authenticate = require('../middleware/auth');
 const validate = require('../middleware/validate');
+const validateIdParam = require('../middleware/validateIdParam');
 
 const router = express.Router();
 
@@ -18,7 +19,7 @@ router.post(
   reportController.generateReport
 );
 
-router.get('/:jobId/download', reportController.downloadReport);
-router.get('/:jobId', reportController.getReportStatus);
+router.get('/:jobId/download', validateIdParam('jobId'), reportController.downloadReport);
+router.get('/:jobId', validateIdParam('jobId'), reportController.getReportStatus);
 
 module.exports = router;
