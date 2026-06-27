@@ -1,0 +1,414 @@
+{
+  "info": {
+    "_postman_id": "8f2b1a1e-1c3a-4a2e-9c2e-ecommerce0001",
+    "name": "Ecommerce CRUD + Bulk Upload API",
+    "description": "Angular + Node.js + PostgreSQL e-commerce assignment: User/Category/Product CRUD, JWT auth, async CSV bulk upload, async CSV/XLSX report generation, paginated/sortable/searchable product list.\n\nHow to use:\n1. Import this collection and the companion environment (Ecommerce-CRUD-Bulk-Upload.postman_environment.json).\n2. Run 'Auth > Register' then 'Auth > Login' (or just Login if the user already exists) - the JWT token is captured automatically into the {{token}} variable and used by every other request.\n3. Run 'Categories > Create Category' - captures {{categoryId}} used by Product requests.\n4. Run the rest of the folders top to bottom.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [ { "key": "token", "value": "{{token}}", "type": "string" } ]
+  },
+  "event": [],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "userId", "value": "", "type": "string" },
+    { "key": "categoryId", "value": "", "type": "string" },
+    { "key": "categoryUniqueId", "value": "", "type": "string" },
+    { "key": "productId", "value": "", "type": "string" },
+    { "key": "bulkJobId", "value": "", "type": "string" },
+    { "key": "reportJobId", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] },
+            "description": "Creates a new user. Email must be unique. Password is hashed with bcrypt server-side."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.collectionVariables.set('token', json.data.token);",
+                  "  pm.collectionVariables.set('userId', json.data.user.id);",
+                  "}",
+                  "pm.test('Status is 201 or 409 (already registered)', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"Secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] },
+            "description": "Logs in and returns a JWT used by every other request in this collection."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () { pm.response.to.have.status(200); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.data.token);",
+                  "pm.collectionVariables.set('userId', json.data.user.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"], "path": ["users"],
+              "query": [ { "key": "page", "value": "1" }, { "key": "limit", "value": "10" } ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User By Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"testuser@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/users/{{userId}}", "host": ["{{baseUrl}}"], "path": ["users", "{{userId}}"] },
+            "description": "Destructive - only run this if you intend to remove the test account. Re-run Register/Login afterwards to get a fresh token."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/categories?page=1&limit=10&search=",
+              "host": ["{{baseUrl}}"], "path": ["categories"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "search", "value": "", "description": "case-insensitive substring match on category name" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category By Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Electronics\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] },
+            "description": "uniqueId (UUID) is generated server-side automatically."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('categoryId', json.data.id);",
+                  "pm.collectionVariables.set('categoryUniqueId', json.data.uniqueId);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Consumer Electronics\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/categories/{{categoryId}}", "host": ["{{baseUrl}}"], "path": ["categories", "{{categoryId}}"] },
+            "description": "Returns 409 if products still reference this category."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products (pagination + sort + search)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/products?page=1&limit=10&sortBy=price&sortOrder=asc&search=&categoryId=",
+              "host": ["{{baseUrl}}"], "path": ["products"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" },
+                { "key": "sortBy", "value": "price", "description": "price | createdAt" },
+                { "key": "sortOrder", "value": "asc", "description": "asc | desc" },
+                { "key": "search", "value": "", "description": "matches product name OR category name" },
+                { "key": "categoryId", "value": "", "description": "optional exact category id filter" }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product By Id",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Wireless Mouse", "type": "text" },
+                { "key": "price", "value": "29.99", "type": "text" },
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "image", "type": "file", "src": [] }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] },
+            "description": "multipart/form-data. 'image' file is optional - select a local file in Postman or remove the field. uniqueId (UUID) is generated server-side automatically."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201', function () { pm.response.to.have.status(201); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('productId', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "name", "value": "Wireless Mouse (Updated)", "type": "text" },
+                { "key": "price", "value": "24.99", "type": "text" },
+                { "key": "categoryId", "value": "{{categoryId}}", "type": "text" },
+                { "key": "image", "type": "file", "src": [] }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] },
+            "description": "Image field is optional on update - omit it to keep the existing image."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{baseUrl}}/products/{{productId}}", "host": ["{{baseUrl}}"], "path": ["products", "{{productId}}"] }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bulk Upload",
+      "item": [
+        {
+          "name": "Download CSV Template",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/bulk-upload/template", "host": ["{{baseUrl}}"], "path": ["products", "bulk-upload", "template"] },
+            "description": "Downloads a sample CSV with header: name,price,categoryName,image"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Bulk CSV",
+          "request": {
+            "method": "POST",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] }
+              ]
+            },
+            "url": { "raw": "{{baseUrl}}/products/bulk-upload", "host": ["{{baseUrl}}"], "path": ["products", "bulk-upload"] },
+            "description": "Select a CSV file (name,price,categoryName,image columns; categoryName must match an existing category). Responds 202 immediately with a jobId - the file is processed asynchronously in the background so large files never cause a 504 timeout. Poll 'Get Bulk Upload Job Status' until status is 'completed' or 'failed'."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 202', function () { pm.response.to.have.status(202); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('bulkJobId', json.data.jobId);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Bulk Upload Job Status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/bulk-upload/{{bulkJobId}}", "host": ["{{baseUrl}}"], "path": ["products", "bulk-upload", "{{bulkJobId}}"] },
+            "description": "Re-send this request (e.g. with Postman Runner or manually every couple seconds) until status is 'completed' or 'failed'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Generate Report",
+          "request": {
+            "method": "POST",
+            "header": [ { "key": "Content-Type", "value": "application/json" } ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"csv\",\n  \"categoryId\": null\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": { "raw": "{{baseUrl}}/reports/generate", "host": ["{{baseUrl}}"], "path": ["reports", "generate"] },
+            "description": "format: 'csv' or 'xlsx'. categoryId is optional (omit or null for all products). Responds 202 immediately with a jobId; the file is built asynchronously on disk so large exports never cause a 504 timeout."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 202', function () { pm.response.to.have.status(202); });",
+                  "const json = pm.response.json();",
+                  "pm.collectionVariables.set('reportJobId', json.data.jobId);"
+                ]
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Get Report Job Status",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/{{reportJobId}}", "host": ["{{baseUrl}}"], "path": ["reports", "{{reportJobId}}"] },
+            "description": "Poll until status is 'completed', then call 'Download Report'."
+          },
+          "response": []
+        },
+        {
+          "name": "Download Report",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/reports/{{reportJobId}}/download", "host": ["{{baseUrl}}"], "path": ["reports", "{{reportJobId}}", "download"] },
+            "description": "Streams the generated CSV/XLSX file. In Postman, use 'Send and Download' to save it locally."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

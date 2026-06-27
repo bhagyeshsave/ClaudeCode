@@ -1,0 +1,10 @@
+node_modules/
+.env
+storage/uploads/products/*
+!storage/uploads/products/.gitkeep
+storage/reports/*
+!storage/reports/.gitkeep
+storage/bulk-uploads/*
+!storage/bulk-uploads/.gitkeep
+*.log
+npm-debug.log*
